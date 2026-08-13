@@ -26,14 +26,20 @@ const MARGE_CADRE = 36;
 // suivants, à l'intérieur d'un même geste, sont soumis à trois conditions.
 const SEUIL_MOLETTE = 30;
 const FIN_IMPULSION_MS = 140;
-const COOLDOWN_MS = 320;
+const COOLDOWN_MS = 260;
 const SEUIL_REPRISE = 120;
 // Part du pic d'amplitude du geste en dessous de laquelle on considère qu'on
 // n'a plus affaire qu'à de l'inertie. C'est le discriminant : la queue d'inertie
 // d'une impulsion décroît, un geste entretenu se maintient près de son pic.
 const PART_PIC = 0.6;
 
-const DUREE = 0.6;
+// Le rouleau ne joue pas un tween par cran : il glisse en continu vers la carte
+// visée. Un tween à durée fixe décélère jusqu'à l'arrêt avant que le cran
+// suivant ne reparte, et se voit redémarré s'il arrive en cours de route — d'où
+// une impression de saccade en enchaînant. Ici, changer de cible ne fait que
+// déplacer la cible : le mouvement, lui, n'est jamais interrompu.
+const LISSAGE = 0.14;
+const ARRIVEE = 0.0008;
 const SEUIL_GLISSE = 8;
 const ALIGNEMENT = 90; // tolérance pour considérer le panneau aligné à l'écran
 
@@ -43,7 +49,10 @@ const ALIGNEMENT = 90; // tolérance pour considérer le panneau aligné à l'é
 // mêmes deltas.
 const IMPULSIONS_SORTIE = 2;
 const DEPASSEMENT_MAX = 34;
-const REPOS_BORD_MS = 700;
+// Fenêtre pendant laquelle les impulsions au bord se cumulent. À 700 ms elle
+// était trop courte : deux poussées franches, séparées par le temps de relever
+// les doigts, retombaient à zéro entre les deux.
+const REPOS_BORD_MS = 1200;
 
 export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
   const racineRef = useRef(null);
@@ -53,7 +62,8 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
   const depassementRef = useRef({ valeur: 0 });
   const mesuresRef = useRef({ hauteur: 0, rayon: 0 });
   const cacheRef = useRef([]);
-  const animRef = useRef(null);
+  const cibleRef = useRef(0);
+  const boucleActiveRef = useRef(false);
   const [actif, setActif] = useState(0);
 
   const nombre = cartes.length;
@@ -96,6 +106,15 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       const distance = Math.abs(ecart);
       const horsPortee = distance > PORTEE;
 
+      // `inert` est réglé avant le retour anticipé : sinon une carte sortie de
+      // portée conserve sa dernière valeur et reste focusable au clavier et
+      // lue par un lecteur d'écran alors qu'elle est masquée.
+      const inerte = horsPortee || distance > 0.5;
+      if (cache.inert !== inerte) {
+        el.inert = inerte;
+        cache.inert = inerte;
+      }
+
       const display = horsPortee ? "none" : "block";
       if (cache.display !== display) {
         el.style.display = display;
@@ -115,29 +134,51 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
         el.style.zIndex = plan;
         cache.plan = plan;
       }
-
-      const inerte = distance > 0.5;
-      if (cache.inert !== inerte) {
-        el.inert = inerte;
-        cache.inert = inerte;
-      }
     });
   }, []);
+
+  const boucle = useCallback(() => {
+    const etat = etatRef.current;
+    const ecart = cibleRef.current - etat.position;
+
+    if (Math.abs(ecart) < ARRIVEE) {
+      etat.position = cibleRef.current;
+      rendre();
+      gsap.ticker.remove(boucle);
+      boucleActiveRef.current = false;
+      return;
+    }
+
+    // Lissage exponentiel corrigé de la cadence réelle : la course reste
+    // identique à 60 comme à 120 Hz.
+    etat.position += ecart * (1 - (1 - LISSAGE) ** gsap.ticker.deltaRatio());
+    rendre();
+  }, [rendre]);
+
+  const suivreCible = useCallback(() => {
+    if (boucleActiveRef.current) return;
+    boucleActiveRef.current = true;
+    gsap.ticker.add(boucle);
+  }, [boucle]);
+
+  const figerSurPosition = useCallback(() => {
+    cibleRef.current = etatRef.current.position;
+    if (!boucleActiveRef.current) return;
+    gsap.ticker.remove(boucle);
+    boucleActiveRef.current = false;
+  }, [boucle]);
 
   const aller = useCallback(
     (cible) => {
       const n = Math.max(0, Math.min(nombre - 1, cible));
       setActif(n);
-      animRef.current?.kill();
-      animRef.current = gsap.to(etatRef.current, {
-        position: n,
-        duration: DUREE,
-        ease: "power3.out",
-        onUpdate: rendre,
-      });
+      cibleRef.current = n;
+      suivreCible();
     },
-    [nombre, rendre],
+    [nombre, suivreCible],
   );
+
+  useEffect(() => () => gsap.ticker.remove(boucle), [boucle]);
 
   // Le rouleau ne prend la main que lorsque son panneau occupe l'écran.
   const estAligne = useCallback(() => {
@@ -155,6 +196,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       : -1;
     if (depuisAncre > 0) {
       etatRef.current.position = depuisAncre;
+      cibleRef.current = depuisAncre;
       setActif(depuisAncre);
     }
 
@@ -347,7 +389,8 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       depart = e.clientY;
       positionDepart = etatRef.current.position;
       aGlisse = false;
-      animRef.current?.kill();
+      // Le glissé prend la main sur le lissage en cours.
+      figerSurPosition();
     };
 
     const surDeplacement = (e) => {
@@ -390,7 +433,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       window.removeEventListener("pointercancel", surRelache);
       cadre.removeEventListener("click", surClic, true);
     };
-  }, [aller, nombre, rendre]);
+  }, [aller, figerSurPosition, nombre, rendre]);
 
   // Clavier
   useEffect(() => {
