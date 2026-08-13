@@ -29,7 +29,9 @@ export default function RootLayout({ children }) {
         <ScrollLisse />
         <Header />
         <main>{children}</main>
-        <Footer />
+        <div id="pied">
+          <Footer />
+        </div>
       </body>
     </html>
   );
