@@ -41,6 +41,10 @@ const PART_PIC = 0.6;
 const LISSAGE = 0.14;
 const ARRIVEE = 0.0008;
 const SEUIL_GLISSE = 8;
+// Part de carte à parcourir pour valider un changement au relâchement. Un
+// arrondi simple exigeait la moitié d'une carte, soit presque toute la largeur
+// de l'écran au pouce.
+const SEUIL_VALIDATION = 0.25;
 const ALIGNEMENT = 90; // tolérance pour considérer le panneau aligné à l'écran
 
 // Résistance au bord : il faut deux impulsions distinctes pour quitter le
@@ -54,17 +58,24 @@ const DEPASSEMENT_MAX = 34;
 // les doigts, retombaient à zéro entre les deux.
 const REPOS_BORD_MS = 1200;
 
+// En dessous de cette largeur le rouleau bascule sur un axe vertical : on
+// balaie de gauche à droite. Sur un écran étroit, le doigt qui monte doit
+// rendre la page au défilement — sinon le pied de page est inatteignable, et le
+// même geste voudrait dire deux choses.
+const REQUETE_HORIZONTAL = "(max-width: 1023px)";
+
 export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
   const racineRef = useRef(null);
   const cadreRef = useRef(null);
   const elementsRef = useRef([]);
   const etatRef = useRef({ position: 0 });
   const depassementRef = useRef({ valeur: 0 });
-  const mesuresRef = useRef({ hauteur: 0, rayon: 0 });
+  const mesuresRef = useRef({ etendue: 0, rayon: 0, horizontal: false });
   const cacheRef = useRef([]);
   const cibleRef = useRef(0);
   const boucleActiveRef = useRef(false);
   const [actif, setActif] = useState(0);
+  const [horizontal, setHorizontal] = useState(false);
 
   const nombre = cartes.length;
 
@@ -73,11 +84,28 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
   const mesurer = useCallback(() => {
     const cadre = cadreRef.current;
     if (!cadre) return;
-    const cadreHauteur = cadre.clientHeight || 1;
-    const hauteur = Math.max(200, cadreHauteur - MARGE_CADRE);
-    mesuresRef.current = { hauteur, rayon: hauteur * RAYON };
+    const enHorizontal = window.matchMedia(REQUETE_HORIZONTAL).matches;
+
+    // `etendue` est la dimension le long de laquelle les cartes défilent :
+    // la hauteur en vertical, la largeur en horizontal. Tout le reste du
+    // calcul est identique, seul l'axe change.
+    const brut = enHorizontal ? cadre.clientWidth : cadre.clientHeight;
+    const etendue = Math.max(200, (brut || 1) - MARGE_CADRE);
+    mesuresRef.current = {
+      etendue,
+      rayon: etendue * RAYON,
+      horizontal: enHorizontal,
+    };
+
     elementsRef.current.forEach((el) => {
-      if (el) el.style.height = `${hauteur}px`;
+      if (!el) return;
+      if (enHorizontal) {
+        el.style.width = `${etendue}px`;
+        el.style.height = "";
+      } else {
+        el.style.width = "";
+        el.style.height = `${etendue}px`;
+      }
     });
   }, []);
 
@@ -89,12 +117,15 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
    * cartes de cette taille à chaque image était la cause des à-coups.
    */
   const rendre = useCallback(() => {
-    const { hauteur, rayon } = mesuresRef.current;
-    if (!hauteur) return;
+    const { etendue, rayon, horizontal: enH } = mesuresRef.current;
+    if (!etendue) return;
 
     const cadre = cadreRef.current;
     if (cadre) {
-      cadre.style.transform = `translate3d(0, ${depassementRef.current.valeur.toFixed(2)}px, 0)`;
+      const d = depassementRef.current.valeur.toFixed(2);
+      cadre.style.transform = enH
+        ? `translate3d(${d}px, 0, 0)`
+        : `translate3d(0, ${d}px, 0)`;
     }
 
     const position = etatRef.current.position;
@@ -123,10 +154,13 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       if (horsPortee) return;
 
       const rad = (ecart * ANGLE * Math.PI) / 180;
-      const y = rayon * Math.sin(rad) - hauteur / 2;
+      const long = rayon * Math.sin(rad) - etendue / 2;
       const z = rayon * Math.cos(rad) - rayon;
+      const angle = (enH ? ecart : -ecart) * ANGLE;
 
-      el.style.transform = `translate3d(0, ${y.toFixed(2)}px, ${z.toFixed(2)}px) rotateX(${(-ecart * ANGLE).toFixed(2)}deg)`;
+      el.style.transform = enH
+        ? `translate3d(${long.toFixed(2)}px, 0, ${z.toFixed(2)}px) rotateY(${angle.toFixed(2)}deg)`
+        : `translate3d(0, ${long.toFixed(2)}px, ${z.toFixed(2)}px) rotateX(${angle.toFixed(2)}deg)`;
       el.style.opacity = Math.max(0, 1 - distance * FONDU).toFixed(3);
 
       const plan = Math.round(100 - distance * 10);
@@ -200,6 +234,9 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       setActif(depuisAncre);
     }
 
+    const requete = window.matchMedia(REQUETE_HORIZONTAL);
+    setHorizontal(requete.matches);
+
     mesurer();
     rendre();
 
@@ -207,9 +244,27 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       mesurer();
       rendre();
     };
+    const surOrientation = () => {
+      setHorizontal(requete.matches);
+      mesurer();
+      rendre();
+    };
+
     window.addEventListener("resize", surRedimensionnement);
-    return () => window.removeEventListener("resize", surRedimensionnement);
+    requete.addEventListener("change", surOrientation);
+    return () => {
+      window.removeEventListener("resize", surRedimensionnement);
+      requete.removeEventListener("change", surOrientation);
+    };
   }, [cartes, mesurer, rendre]);
+
+  // Le passage en horizontal déplace la navigation sous le rouleau, ce qui
+  // élargit le cadre. `mesurer` appelé dans l'effet qui change l'orientation
+  // lirait l'ancienne largeur : il faut remesurer une fois le rendu appliqué.
+  useEffetIsomorphe(() => {
+    mesurer();
+    rendre();
+  }, [horizontal, mesurer, rendre]);
 
   // Molette et trackpad. L'écouteur est posé sur le rouleau lui-même, pas sur
   // le panneau : hors du rouleau, la molette n'est jamais interceptée et c'est
@@ -294,6 +349,11 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     };
 
     const surMolette = (e) => {
+      // En horizontal la molette n'est jamais captée : le doigt et la molette
+      // servent au défilement vertical de la page, les cartes se changent au
+      // balayage, aux flèches ou aux pastilles.
+      if (mesuresRef.current.horizontal) return;
+
       // Le panneau a pu être laissé de travers en défilant à côté du rouleau.
       // Sous le curseur, le rouleau doit répondre : on le remet d'abord en
       // place, plutôt que de rester sourd.
@@ -384,9 +444,12 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     let positionDepart = 0;
     let aGlisse = false;
 
+    // Le long de l'axe du rouleau : vertical sur grand écran, horizontal sinon.
+    const surAxe = (e) => (mesuresRef.current.horizontal ? e.clientX : e.clientY);
+
     const surAppui = (e) => {
       if (e.button !== undefined && e.button !== 0) return;
-      depart = e.clientY;
+      depart = surAxe(e);
       positionDepart = etatRef.current.position;
       aGlisse = false;
       // Le glissé prend la main sur le lissage en cours.
@@ -395,13 +458,16 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
 
     const surDeplacement = (e) => {
       if (depart === null) return;
-      const dy = e.clientY - depart;
-      if (!aGlisse && Math.abs(dy) < SEUIL_GLISSE) return;
+      const delta = surAxe(e) - depart;
+      if (!aGlisse && Math.abs(delta) < SEUIL_GLISSE) return;
       aGlisse = true;
-      const pas = mesuresRef.current.rayon * (ANGLE / 57.3) || 1;
+      // En horizontal le pas suit la largeur d'une carte : le doigt déplace le
+      // rouleau d'autant qu'il parcourt de carte.
+      const m = mesuresRef.current;
+      const pas = (m.horizontal ? m.etendue : m.rayon * (ANGLE / 57.3)) || 1;
       etatRef.current.position = Math.max(
         -0.5,
-        Math.min(nombre - 0.5, positionDepart - dy / pas),
+        Math.min(nombre - 0.5, positionDepart - delta / pas),
       );
       rendre();
     };
@@ -409,7 +475,16 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     const surRelache = () => {
       if (depart === null) return;
       depart = null;
-      if (aGlisse) aller(Math.round(etatRef.current.position));
+      if (!aGlisse) return;
+
+      // Au-delà d'une demi-carte on arrondit à la plus proche ; en deçà, un
+      // quart suffit à valider le cran suivant, sinon on revient en place.
+      const parcouru = etatRef.current.position - positionDepart;
+      const ampleur = Math.abs(parcouru);
+      if (ampleur >= 0.5) aller(Math.round(etatRef.current.position));
+      else if (ampleur >= SEUIL_VALIDATION)
+        aller(positionDepart + Math.sign(parcouru));
+      else aller(positionDepart);
     };
 
     // Un glissé qui se termine sur une carte-lien ne doit pas naviguer.
@@ -449,22 +524,28 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       if (!estAligne()) return;
 
       const indice = Math.round(etatRef.current.position);
+      const enH = mesuresRef.current.horizontal;
       const touches = {
-        ArrowDown: indice + 1,
+        ArrowRight: indice + 1,
+        ArrowLeft: indice - 1,
         PageDown: indice + 1,
-        ArrowUp: indice - 1,
         PageUp: indice - 1,
         Home: 0,
         End: nombre - 1,
+        // Les flèches verticales ne pilotent le rouleau que lorsqu'il tourne
+        // sur cet axe ; en horizontal elles restent au défilement de la page.
+        ...(enH ? {} : { ArrowDown: indice + 1, ArrowUp: indice - 1 }),
       };
       if (!(e.key in touches)) return;
       e.preventDefault();
 
       if (touches[e.key] < 0) {
+        if (enH) return;
         scrollVers(panneauPrecedent);
         return;
       }
       if (touches[e.key] > nombre - 1) {
+        if (enH) return;
         scrollVers("#pied");
         return;
       }
@@ -486,8 +567,10 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       if (url.pathname !== window.location.pathname || !url.hash) return;
       const i = cartes.findIndex((c) => `#${c.id}` === url.hash);
       if (i === -1) return;
+      // Pas de `stopPropagation` ici : il empêcherait aussi le `onClick` des
+      // composants en aval — le menu repliable ne se refermait plus. Next
+      // vérifie `defaultPrevented` avant de naviguer, `preventDefault` suffit.
       e.preventDefault();
-      e.stopPropagation();
       scrollVers("#cartes");
       aller(i);
       window.history.pushState(null, "", url.hash);
@@ -496,12 +579,20 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     return () => document.removeEventListener("click", surClic, true);
   }, [aller, cartes]);
 
+  // En horizontal la navigation passe sous le rouleau, en ligne : sur un écran
+  // étroit, la colonne latérale était réduite à 16 px et ses cibles à 7 px.
   return (
     <div
       ref={racineRef}
-      className={`relative flex min-h-0 items-stretch ${className}`}
+      className={`relative flex min-h-0 ${
+        horizontal ? "flex-col" : "items-stretch"
+      } ${className}`}
     >
-      <div ref={cadreRef} data-rouleau className="rouleau flex-1">
+      <div
+        ref={cadreRef}
+        data-rouleau
+        className={`rouleau flex-1 ${horizontal ? "rouleau--horizontal" : ""}`}
+      >
         {cartes.map((carte, i) => (
           <div
             key={carte.id}
@@ -518,7 +609,11 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
 
       <nav
         aria-label="Navigation entre les cartes"
-        className="ml-4 flex shrink-0 flex-col items-center justify-center gap-3 sm:ml-6"
+        className={
+          horizontal
+            ? "mt-2 flex shrink-0 items-center justify-center gap-1"
+            : "ml-4 flex shrink-0 flex-col items-center justify-center gap-3 sm:ml-6"
+        }
       >
         <button
           type="button"
@@ -527,7 +622,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
           aria-label="Carte précédente"
           className="rouleau-fleche"
         >
-          ↑
+          {horizontal ? "←" : "↑"}
         </button>
 
         {cartes.map((carte, i) => (
@@ -548,7 +643,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
           aria-label="Carte suivante"
           className="rouleau-fleche"
         >
-          ↓
+          {horizontal ? "→" : "↓"}
         </button>
       </nav>
     </div>

@@ -122,6 +122,42 @@ body {
     backdrop-filter 320ms ease;
 }
 
+/* Bouton du menu repliable : deux barres qui se croisent à l'ouverture.
+   Cible de 44 px, le minimum confortable au doigt. */
+.menu-bouton {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-right: -10px;
+}
+
+.menu-barre {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  background-color: var(--ink);
+  transition: transform 260ms ease, opacity 260ms ease;
+}
+
+.menu-barre.est-ouvert:first-child {
+  transform: translateY(3.25px) rotate(45deg);
+}
+
+.menu-barre.est-ouvert:last-child {
+  transform: translateY(-3.25px) rotate(-45deg);
+}
+
+/* Le panneau porte son propre fond : le header est transparent en tête de
+   page, et le menu ouvert doit rester lisible par-dessus les circuits. */
+.menu-panneau {
+  background-color: color-mix(in srgb, var(--canvas) 96%, transparent);
+  backdrop-filter: blur(14px);
+}
+
 [data-defile] .entete {
   background-color: color-mix(in srgb, var(--canvas) 85%, transparent);
   border-bottom-color: var(--line);
@@ -230,6 +266,20 @@ body {
   touch-action: pan-x;
 }
 
+/* Sur écran étroit le rouleau tourne sur un axe vertical : le balayage
+   horizontal change de carte, et `pan-y` rend le doigt vertical au défilement
+   de la page — sans quoi le pied de page reste inatteignable. */
+.rouleau--horizontal {
+  touch-action: pan-y;
+}
+
+.rouleau--horizontal .rouleau-carte {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  right: auto;
+}
+
 /* Pas de `transform-style: preserve-3d` ici : la carte est une surface plane,
    et le préserver forcerait la composition 3D de tout son contenu. */
 .rouleau-carte {
@@ -262,19 +312,34 @@ body {
   overscroll-behavior: contain;
 }
 
+/* La pastille visible fait 7 px, mais la cible tactile en fait 28 : au doigt,
+   7 px sont inatteignables. Le point est dessiné en pseudo-élément pour que le
+   bouton porte la surface sans grossir la pastille. */
 .rouleau-pastille {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+.rouleau-pastille::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 7px;
   height: 7px;
+  margin: -3.5px 0 0 -3.5px;
   border-radius: 50%;
   background-color: var(--line);
   transition: background-color 240ms ease, transform 240ms ease;
 }
 
-.rouleau-pastille:hover {
+.rouleau-pastille:hover::after {
   background-color: var(--faint);
 }
 
-.rouleau-pastille.est-active {
+.rouleau-pastille.est-active::after {
   background-color: var(--accent);
   transform: scale(1.6);
 }
@@ -284,7 +349,8 @@ body {
   font-size: 13px;
   line-height: 1;
   color: var(--faint);
-  padding: 4px;
+  min-width: 28px;
+  min-height: 28px;
   transition: color 240ms ease;
 }
 
