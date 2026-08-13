@@ -205,14 +205,27 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     boucleActiveRef.current = false;
   }, [boucle]);
 
+  /** Ramène une carte à sa première ligne. */
+  const remonterCarte = useCallback((i) => {
+    const interne = elementsRef.current[i]?.querySelector(".carte");
+    if (interne && interne.scrollTop !== 0) interne.scrollTop = 0;
+  }, []);
+
   const aller = useCallback(
     (cible) => {
       const n = Math.max(0, Math.min(nombre - 1, cible));
+
+      // Une carte qui entre se présente toujours par le haut. Sans ça elle
+      // garde le défilement interne laissé lors de son dernier passage. On ne
+      // touche pas au cas où l'on revient sur la carte courante — un balayage
+      // trop court ne doit pas faire perdre sa lecture.
+      if (n !== cibleRef.current) remonterCarte(n);
+
       setActif(n);
       cibleRef.current = n;
       suivreCible();
     },
-    [nombre, suivreCible],
+    [nombre, remonterCarte, suivreCible],
   );
 
   useEffect(() => () => gsap.ticker.remove(boucle), [boucle]);
@@ -461,6 +474,15 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       positionDepart = etatRef.current.position;
       aGlisse = false;
       axe = null;
+
+      // Les voisines apparaissent progressivement pendant le glissé : on les
+      // remonte dès l'appui, sinon on les voit défiler à mi-hauteur avant de
+      // se recaler au relâchement.
+      const courante = Math.round(positionDepart);
+      elementsRef.current.forEach((_, i) => {
+        if (i !== courante) remonterCarte(i);
+      });
+
       // Le glissé prend la main sur le lissage en cours.
       figerSurPosition();
     };
@@ -544,7 +566,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       cadre.removeEventListener("touchmove", surToucheDeplacement);
       cadre.removeEventListener("click", surClic, true);
     };
-  }, [aller, figerSurPosition, nombre, rendre]);
+  }, [aller, figerSurPosition, nombre, remonterCarte, rendre]);
 
   // Clavier
   useEffect(() => {
