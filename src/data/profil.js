@@ -1,7 +1,12 @@
 export const profil = {
   nom: "Marving GUSTAVE",
   role: "Développeur full-stack",
+  roleSecondaire: "Data Engineer",
   structure: "BMG Consulting",
+  // Titre de la page d'accueil : la prise de position vient avant le métier.
+  // `accroche` reste, mais en sous-titre.
+  position:
+    "L'IA ne remplace pas l'ingénieur. Elle change ce qu'un ingénieur seul peut livrer.",
   accroche:
     "Je conçois et je livre des applications métier qui tiennent en production.",
   intro:

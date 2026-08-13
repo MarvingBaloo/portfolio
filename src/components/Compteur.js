@@ -26,6 +26,9 @@ export default function Compteur({ valeur, className = "" }) {
         n: cible,
         duration: cible > 1000 ? 1.5 : 1.1,
         ease: "power2.out",
+        // Sans ça le tween se rend à sa progression 0 dès sa création et
+        // remplace la valeur par « 0 » tant qu'on n'a pas scrollé jusqu'à elle.
+        immediateRender: false,
         scrollTrigger: { trigger: noeud, start: "top 92%", once: true },
         onUpdate: () => {
           noeud.textContent = formateur.format(Math.round(etat.n));

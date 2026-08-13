@@ -4,6 +4,7 @@ export const projets = [
     nom: "Café Verdé",
     secteur: "Restauration",
     statut: "En production",
+    couleur: "#3f9e5a",
     resume:
       "Caisse et commande en ligne pour un restaurant : du terminal de paiement à l'écran cuisine.",
     accroche:
@@ -83,6 +84,7 @@ export const projets = [
     nom: "Youmoov Flex",
     secteur: "Mobilité",
     statut: "En production",
+    couleur: "#3b7dd8",
     resume:
       "Plateforme SaaS multi-tenant de gestion de courses, avec portefeuille interne et dispatch automatique.",
     accroche:
@@ -160,6 +162,7 @@ export const projets = [
     nom: "Plateforme de réservation événementielle",
     secteur: "Événementiel",
     statut: "Livré",
+    couleur: "#8b5cf6",
     resume:
       "Réservation et paiement de lieux de réception, du devis en ligne au contrat généré.",
     accroche:
@@ -227,6 +230,7 @@ export const projets = [
     nom: "Serveur MCP d'infrastructure",
     secteur: "Outillage IA",
     statut: "En production",
+    couleur: "#d97a1f",
     resume:
       "64 outils exposés à un assistant IA pour piloter une infrastructure auto-hébergée, avec validation humaine des actions sensibles.",
     accroche:

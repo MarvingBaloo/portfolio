@@ -50,8 +50,23 @@
   --font-mono: var(--font-mono-var), ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-html {
-  scroll-behavior: smooth;
+/* Socle Lenis. `scroll-behavior: smooth` est volontairement absent : il entre
+   en conflit direct avec le scroll inertiel piloté en JS. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
 
 body {
@@ -97,6 +112,19 @@ body {
     transparent 70%
   );
   z-index: -1;
+  animation: respire 11s ease-in-out infinite;
+}
+
+@keyframes respire {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
 }
 
 /* Cadre de fenêtre : transforme une capture brute en artefact intentionnel. */
@@ -142,6 +170,44 @@ body {
     color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
+/* Carte projet : contour translucide + carte intérieure, à la manière d'un
+   cadre double. La courbe de transition est celle relevée sur la référence. */
+.carte-cadre {
+  border-radius: 24px;
+  padding: 8px;
+  background-color: color-mix(in srgb, var(--ink) 4%, transparent);
+  transition: background-color 400ms cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.group:hover .carte-cadre {
+  background-color: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.carte {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: var(--surface);
+}
+
+/* Halo teinté par projet, révélé au survol depuis le haut de la carte. */
+.carte-halo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.165, 0.84, 0.44, 1);
+  background: radial-gradient(
+    120% 72% at 50% 0%,
+    color-mix(in srgb, var(--couleur-projet, var(--accent)) 26%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.group:hover .carte-halo {
+  opacity: 1;
+}
+
 .curseur {
   display: inline-block;
   width: 0.55em;
@@ -149,6 +215,12 @@ body {
   vertical-align: -0.12em;
   background-color: var(--accent);
   animation: clignote 1.05s steps(1) infinite;
+}
+
+/* Pendant la frappe le curseur reste plein : il ne clignote qu'à l'arrêt. */
+.curseur-fixe {
+  animation: none;
+  opacity: 1;
 }
 
 @keyframes clignote {
