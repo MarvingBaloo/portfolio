@@ -4,6 +4,8 @@ import { profil } from "@/data/profil";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollLisse from "@/components/ScrollLisse";
+import FondCircuits from "@/components/FondCircuits";
+import MarqueurDefilement from "@/components/MarqueurDefilement";
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
@@ -27,6 +29,8 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-screen antialiased">
         <ScrollLisse />
+        <FondCircuits />
+        <MarqueurDefilement />
         <Header />
         <main>{children}</main>
         <div id="pied">

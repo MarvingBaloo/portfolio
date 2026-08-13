@@ -95,9 +95,52 @@ body {
   line-height: 1.05;
 }
 
+/* Variante du display pour une ligne de sous-titre : même famille que le titre,
+   mais un interligne respirable. Le 1.05 de `.display` est calibré pour de
+   grandes lignes de titre, il étouffe un paragraphe de deux lignes.
+   Déclarée ici et non en utilitaires Tailwind : `.display` n'est pas dans une
+   couche, elle l'emporterait donc sur un `leading-*`. */
+.display-sous {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+}
+
 .rule {
   height: 1px;
   background-color: var(--line);
+}
+
+/* En tête de page le header est transparent : le fond de circuits passe
+   derrière le nom sans rupture. Il ne prend son fond opaque et son flou qu'une
+   fois du contenu passé dessous, pour rester lisible. */
+.entete {
+  background-color: transparent;
+  border-bottom-color: transparent;
+  transition: background-color 320ms ease, border-color 320ms ease,
+    backdrop-filter 320ms ease;
+}
+
+[data-defile] .entete {
+  background-color: color-mix(in srgb, var(--canvas) 85%, transparent);
+  border-bottom-color: var(--line);
+  backdrop-filter: blur(12px);
+}
+
+/* Fond de circuits : deux calques superposés, fixes derrière toute la page.
+   Le premier porte les pistes, gravées une seule fois ; le second ne reçoit que
+   les impulsions et est le seul redessiné à chaque image. */
+.fond-circuits {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.fond-circuits canvas {
+  position: absolute;
+  inset: 0;
 }
 
 /* Halo diffus posé derrière le héros. Purement décoratif, hors flux. */

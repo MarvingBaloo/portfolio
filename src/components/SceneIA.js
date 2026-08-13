@@ -388,12 +388,6 @@ export default function SceneIA() {
           <Machine />
         </g>
       </svg>
-
-      {/* Légende en vrai texte du DOM, pas en <text> SVG : elle est
-          sélectionnable, indexable, et rendue avec la fonte du site. */}
-      <p className="mt-3 text-center font-mono text-xs tracking-[0.14em] text-faint">
-        <span className="text-accent">$</span> humain + ia
-      </p>
     </div>
   );
 }

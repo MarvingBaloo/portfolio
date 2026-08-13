@@ -120,17 +120,19 @@ export default function Home() {
               data-hero
               className="font-mono text-xs uppercase tracking-[0.18em] text-accent"
             >
-              {profil.role} · {profil.roleSecondaire} — {profil.structure}
+              {profil.role} · {profil.roleSecondaire} —{" "}
+              {/* La ligne est en capitales, la marque garde sa casse propre. */}
+              <span className="normal-case">{profil.structure}</span>
             </p>
             <h1
               data-hero
-              className="display mt-5 max-w-3xl text-3xl text-ink sm:text-4xl"
+              className="display mt-5 max-w-3xl text-2xl text-ink sm:text-3xl"
             >
               {profil.position}
             </h1>
             <p
               data-hero
-              className="mt-5 max-w-2xl text-lg leading-snug text-ink sm:text-xl"
+              className="display-sous mt-4 max-w-2xl text-sm text-ink sm:text-base"
             >
               {profil.accroche}
             </p>

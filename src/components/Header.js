@@ -9,11 +9,12 @@ const LIENS = [
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-canvas/85 backdrop-blur-md">
+    <header className="entete sticky top-0 z-50 border-b">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="flex flex-col leading-tight">
           <span className="display text-lg text-ink">{profil.nom}</span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+          {/* Pas de `uppercase` : la marque s'écrit BMGconsulting, en un mot. */}
+          <span className="mt-1 font-mono text-[10px] tracking-[0.18em] text-faint">
             {profil.structure}
           </span>
         </Link>
