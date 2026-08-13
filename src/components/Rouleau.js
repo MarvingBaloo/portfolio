@@ -40,7 +40,10 @@ const PART_PIC = 0.6;
 // déplacer la cible : le mouvement, lui, n'est jamais interrompu.
 const LISSAGE = 0.14;
 const ARRIVEE = 0.0008;
-const SEUIL_GLISSE = 8;
+// Distance au bout de laquelle on décide si le geste appartient au rouleau ou
+// au défilement de la page. Court volontairement : au-delà, le navigateur a
+// déjà engagé son propre panoramique et annule le pointeur.
+const SEUIL_AXE = 4;
 // Part de carte à parcourir pour valider un changement au relâchement. Un
 // arrondi simple exigeait la moitié d'une carte, soit presque toute la largeur
 // de l'écran au pouce.
@@ -441,8 +444,11 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     const cadre = cadreRef.current;
     if (!cadre) return;
     let depart = null;
+    let departX = 0;
+    let departY = 0;
     let positionDepart = 0;
     let aGlisse = false;
+    let axe = null; // null tant qu'indécis, puis "rouleau" ou "page"
 
     // Le long de l'axe du rouleau : vertical sur grand écran, horizontal sinon.
     const surAxe = (e) => (mesuresRef.current.horizontal ? e.clientX : e.clientY);
@@ -450,16 +456,35 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     const surAppui = (e) => {
       if (e.button !== undefined && e.button !== 0) return;
       depart = surAxe(e);
+      departX = e.clientX;
+      departY = e.clientY;
       positionDepart = etatRef.current.position;
       aGlisse = false;
+      axe = null;
       // Le glissé prend la main sur le lissage en cours.
       figerSurPosition();
     };
 
     const surDeplacement = (e) => {
       if (depart === null) return;
-      const delta = surAxe(e) - depart;
-      if (!aGlisse && Math.abs(delta) < SEUIL_GLISSE) return;
+      const dx = e.clientX - departX;
+      const dy = e.clientY - departY;
+
+      // Verrouillage d'axe dès les premiers pixels. Sans lui, un balayage
+      // légèrement oblique était réclamé par le défilement natif, qui annulait
+      // le pointeur en cours de route — d'où l'impression de devoir s'y
+      // reprendre à plusieurs fois.
+      if (!axe) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < SEUIL_AXE) return;
+        const long = mesuresRef.current.horizontal ? dx : dy;
+        const travers = mesuresRef.current.horizontal ? dy : dx;
+        axe = Math.abs(long) >= Math.abs(travers) ? "rouleau" : "page";
+        if (axe === "page") {
+          depart = null; // le geste revient à la page
+          return;
+        }
+      }
+
       aGlisse = true;
       // En horizontal le pas suit la largeur d'une carte : le doigt déplace le
       // rouleau d'autant qu'il parcourt de carte.
@@ -467,12 +492,21 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       const pas = (m.horizontal ? m.etendue : m.rayon * (ANGLE / 57.3)) || 1;
       etatRef.current.position = Math.max(
         -0.5,
-        Math.min(nombre - 0.5, positionDepart - delta / pas),
+        Math.min(nombre - 0.5, positionDepart - (surAxe(e) - depart) / pas),
       );
       rendre();
     };
 
+    // `touch-action` seul ne suffit pas : une fois le geste attribué au
+    // rouleau, il faut retenir le panoramique natif, sinon le navigateur
+    // continue de faire défiler et finit par annuler le pointeur. Écouteur non
+    // passif, c'est la condition pour que `preventDefault` soit pris en compte.
+    const surToucheDeplacement = (e) => {
+      if (axe === "rouleau" && e.cancelable) e.preventDefault();
+    };
+
     const surRelache = () => {
+      axe = null;
       if (depart === null) return;
       depart = null;
       if (!aGlisse) return;
@@ -499,6 +533,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     window.addEventListener("pointermove", surDeplacement);
     window.addEventListener("pointerup", surRelache);
     window.addEventListener("pointercancel", surRelache);
+    cadre.addEventListener("touchmove", surToucheDeplacement, { passive: false });
     cadre.addEventListener("click", surClic, true);
 
     return () => {
@@ -506,6 +541,7 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
       window.removeEventListener("pointermove", surDeplacement);
       window.removeEventListener("pointerup", surRelache);
       window.removeEventListener("pointercancel", surRelache);
+      cadre.removeEventListener("touchmove", surToucheDeplacement);
       cadre.removeEventListener("click", surClic, true);
     };
   }, [aller, figerSurPosition, nombre, rendre]);
