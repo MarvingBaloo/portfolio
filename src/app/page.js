@@ -33,7 +33,7 @@ export default function Home() {
       id: "approche",
       titre: "Approche technique",
       contenu: (
-        <Carte className="flex flex-col justify-center px-8 py-8 sm:px-12 sm:py-9">
+        <Carte className="carte-centree px-8 py-8 sm:px-12 sm:py-9">
           <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-faint">
             Approche technique
           </h2>
@@ -60,7 +60,7 @@ export default function Home() {
       id: "skills",
       titre: "Skills",
       contenu: (
-        <Carte className="flex flex-col justify-center px-8 py-10 sm:px-12 sm:py-12">
+        <Carte className="carte-centree px-8 py-10 sm:px-12 sm:py-12">
           <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-faint">
             Skills
           </h2>

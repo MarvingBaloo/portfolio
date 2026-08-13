@@ -13,7 +13,7 @@ export default function ProjectCard({ projet, index, couverture }) {
     >
       <Carte
         halo
-        className="flex flex-col justify-center px-8 py-9 sm:px-10 sm:py-10"
+        className="carte-centree px-8 py-9 sm:px-10 sm:py-10"
       >
         <div className="relative flex items-start justify-between gap-6">
           <div className="flex items-center gap-3 font-mono text-xs">

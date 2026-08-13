@@ -312,6 +312,17 @@ body {
   overscroll-behavior: contain;
 }
 
+/* Contenu centré tant qu'il tient, aligné en haut dès qu'il déborde.
+   `justify-content: center` seul rend le début inatteignable : le contenu
+   déborde des deux côtés, mange le padding haut et le défilement ne peut pas
+   remonter avant son point de départ — le numéro et le titre de la carte
+   passaient sous le bord. `safe` bascule sur `start` dans ce cas. */
+.carte-centree {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+}
+
 /* La pastille visible fait 7 px, mais la cible tactile en fait 28 : au doigt,
    7 px sont inatteignables. Le point est dessiné en pseudo-élément pour que le
    bouton porte la surface sans grossir la pastille. */
