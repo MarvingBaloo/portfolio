@@ -202,7 +202,7 @@ export const projets = [
 
   {
     slug: "reservation-evenementiel",
-    nom: "Réservation de salles municipales",
+    nom: "Réservation événementielle",
     secteur: "Collectivité",
     statut: "Livré",
     couleur: "#8b5cf6",
