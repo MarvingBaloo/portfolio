@@ -174,7 +174,10 @@ export default function Rouleau({ cartes, panneauPrecedent, className = "" }) {
     });
   }, []);
 
-  const boucle = useCallback(() => {
+  // Expression de fonction nommée : `boucle` se retire lui-même du ticker, et
+  // le nom interne référence la fonction elle-même — un `const boucle` extérieur
+  // serait lu avant sa propre initialisation.
+  const boucle = useCallback(function boucle() {
     const etat = etatRef.current;
     const ecart = cibleRef.current - etat.position;
 
