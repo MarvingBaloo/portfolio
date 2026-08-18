@@ -1,35 +1,23 @@
 @import "tailwindcss";
 
+/* Le site est en sombre, quelle que soit la préférence système du visiteur :
+   c'est un parti pris éditorial, pas un thème. `color-scheme` aligne les
+   éléments natifs — barres de défilement, champs, menus — sur cette palette. */
 :root {
-  --canvas: #faf9f7;
-  --surface: #ffffff;
-  --ink: #14130f;
-  --muted: #555047;
-  --faint: #6d675c;
-  --line: #e4dfd5;
-  --accent: #a8500a;
-  --accent-soft: #f5ede2;
+  color-scheme: dark;
 
-  --lueur: rgba(168, 80, 10, 0.1);
-  --chrome: #eceae5;
-  --ombre: 0 24px 60px -24px rgba(20, 19, 15, 0.28);
-}
+  --canvas: #100f0e;
+  --surface: #191816;
+  --ink: #f2efe9;
+  --muted: #a8a196;
+  --faint: #969087;
+  --line: #2b2926;
+  --accent: #e9a13b;
+  --accent-soft: #241d13;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #100f0e;
-    --surface: #191816;
-    --ink: #f2efe9;
-    --muted: #a8a196;
-    --faint: #969087;
-    --line: #2b2926;
-    --accent: #e9a13b;
-    --accent-soft: #241d13;
-
-    --lueur: rgba(233, 161, 59, 0.16);
-    --chrome: #242220;
-    --ombre: 0 24px 60px -24px rgba(0, 0, 0, 0.75);
-  }
+  --lueur: rgba(233, 161, 59, 0.16);
+  --chrome: #242220;
+  --ombre: 0 24px 60px -24px rgba(0, 0, 0, 0.75);
 }
 
 @theme inline {

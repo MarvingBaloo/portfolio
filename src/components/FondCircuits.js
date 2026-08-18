@@ -125,7 +125,6 @@ export default function FondCircuits() {
     const ctxS = cStatique.getContext("2d");
     const ctxA = cAnime.getContext("2d");
     const reduit = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sombre = window.matchMedia("(prefers-color-scheme: dark)");
 
     let traces = [];
     let impulsions = [];
@@ -287,17 +286,11 @@ export default function FondCircuits() {
 
     // Rien ne tourne quand l'onglet est en arrière-plan.
     const surVisibilite = () => (document.hidden ? arreter() : demarrer());
-    const surTheme = () => {
-      lireCouleurs();
-      graverPistes(window.innerWidth, window.innerHeight);
-    };
-
     dimensionner();
     demarrer();
 
     window.addEventListener("resize", surRedimensionnement);
     document.addEventListener("visibilitychange", surVisibilite);
-    sombre.addEventListener("change", surTheme);
     reduit.addEventListener("change", () => (reduit.matches ? arreter() : demarrer()));
 
     return () => {
@@ -305,7 +298,6 @@ export default function FondCircuits() {
       clearTimeout(minuteurTaille);
       window.removeEventListener("resize", surRedimensionnement);
       document.removeEventListener("visibilitychange", surVisibilite);
-      sombre.removeEventListener("change", surTheme);
     };
   }, []);
 
