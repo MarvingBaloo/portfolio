@@ -54,6 +54,13 @@ export default async function ProjetPage({ params }) {
           {projet.accroche}
         </p>
 
+        <div className="mt-8 border-l-2 border-accent pl-6">
+          <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-faint">
+            Mon rôle
+          </h2>
+          <p className="mt-3 leading-relaxed text-ink">{projet.perimetre}</p>
+        </div>
+
         <div className="mt-10 flex flex-wrap gap-x-12 gap-y-4 border-y border-line py-6">
           {projet.metriques.map((m) => (
             <div key={m.label}>
@@ -90,7 +97,7 @@ export default async function ProjetPage({ params }) {
 
       <section className="mx-auto max-w-3xl px-6 pb-16">
         <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-faint">
-          Le problème
+          {projet.libelleContexte ?? "Le problème"}
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-ink">
           {projet.probleme}
@@ -100,7 +107,7 @@ export default async function ProjetPage({ params }) {
       <section className="border-y border-line bg-surface">
         <div className="mx-auto max-w-3xl px-6 py-16">
           <h2 className="font-mono text-xs uppercase tracking-[0.18em] text-faint">
-            Ce qui a été livré
+            Ce que j&apos;ai livré
           </h2>
           <Reveal as="ul" selecteur="li" decalage={0.06} className="mt-6 space-y-4">
             {projet.solution.map((point) => (
