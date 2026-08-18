@@ -80,6 +80,11 @@ function Humain() {
       <Etiquette texte="HUMAIN" />
       <g data-h-contenu>
         <circle cx="0" cy="98" r="15" />
+        {/* Yeux détourés : à r=2.2, la graisse 2 héritée du groupe parent
+            doublerait leur diamètre apparent. */}
+        <circle data-h-oeil-g cx="-5" cy="94" r="2.2" fill="currentColor" stroke="none" />
+        <circle data-h-oeil-d cx="5" cy="94" r="2.2" fill="currentColor" stroke="none" />
+        <path d="M -5 103 Q 0 106.5 5 103" />
         <line x1="0" y1="113" x2="0" y2="156" />
         <g data-h-bras-arr transform="translate(0,122)">
           <line x1="0" y1="0" x2="0" y2="42" />
@@ -153,6 +158,9 @@ export default function SceneIA() {
     const robot = q("[data-robot]");
     const rContenu = q("[data-r-contenu]");
     const hContenu = q("[data-h-contenu]");
+    const oeilG = q("[data-h-oeil-g]");
+    const oeilD = q("[data-h-oeil-d]");
+    const yeux = [oeilG, oeilD];
 
     const jambesAvant = [q("[data-h-jambe-a]"), q("[data-r-jambe-a]")];
     const jambesArriere = [q("[data-h-jambe-b]"), q("[data-r-jambe-b]")];
@@ -170,6 +178,11 @@ export default function SceneIA() {
       gsap.set(jambes, { svgOrigin: "0 156" });
       gsap.set([...brasArr, ...brasAv], { svgOrigin: "0 122" });
       gsap.set(rContenu, { svgOrigin: "0 0", scaleX: -1 });
+
+      // Chaque œil se ferme sur son propre centre : un svgOrigin commun les
+      // ferait glisser l'un vers l'autre en s'écrasant.
+      gsap.set(oeilG, { svgOrigin: "-5 94" });
+      gsap.set(oeilD, { svgOrigin: "5 94" });
 
       // Pose finale figée si l'utilisateur a demandé moins de mouvement.
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -220,6 +233,14 @@ export default function SceneIA() {
           { y: -2.5, duration: 0.18, ease: "sine.inOut", yoyo: true, repeat: 1 },
           0,
         );
+
+      // Clignement : timeline autonome, jamais imbriquée dans `tl`. Un enfant
+      // `repeat: -1` rendrait la durée de la timeline parente infinie, et son
+      // `progress()` n'atteindrait jamais 1.
+      const clignement = gsap.timeline({ repeat: -1, repeatDelay: 3.2, paused: true });
+      clignement
+        .to(yeux, { scaleY: 0.06, duration: 0.06, ease: "power1.in" })
+        .to(yeux, { scaleY: 1, duration: 0.09, ease: "power1.out" });
 
       // `marche` mémorise si le cycle devrait tourner : quand la scène sort du
       // viewport on met tout en pause, et il faut savoir quoi reprendre au retour.
@@ -333,9 +354,11 @@ export default function SceneIA() {
       const suspendre = () => {
         tl.pause();
         cycle.pause();
+        clignement.pause();
       };
       const reprendre = () => {
         tl.play();
+        clignement.play();
         if (marche) cycle.play();
       };
 
