@@ -5,7 +5,7 @@ import MenuMobile from "@/components/MenuMobile";
 const LIENS = [
   { href: "/#realisations", label: "réalisations" },
   { href: "/skills", label: "skills" },
-  { href: "/#approche", label: "approche" },
+  { href: "/approche", label: "approche" },
 ];
 
 export default function Header() {

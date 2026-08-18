@@ -3,6 +3,7 @@ import Image from "next/image";
 import Carte from "@/components/Carte";
 import Fenetre from "@/components/Fenetre";
 import Compteur from "@/components/Compteur";
+import FlecheCarte from "@/components/FlecheCarte";
 
 export default function ProjectCard({ projet, index, couverture }) {
   return (
@@ -24,12 +25,7 @@ export default function ProjectCard({ projet, index, couverture }) {
               {projet.secteur}
             </span>
           </div>
-          <span
-            aria-hidden="true"
-            className="text-xl leading-none text-faint transition-all duration-300 group-hover:translate-x-1 group-hover:text-accent"
-          >
-            →
-          </span>
+          <FlecheCarte />
         </div>
 
         {/* Deux colonnes : le texte à gauche, la capture à droite. En pile, la
@@ -46,6 +42,10 @@ export default function ProjectCard({ projet, index, couverture }) {
             </div>
 
             <p className="mt-3 leading-relaxed text-muted">{projet.resume}</p>
+
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-faint">
+              {projet.role}
+            </p>
 
             <div className="mt-6 flex flex-wrap gap-x-7 gap-y-3">
               {projet.metriques.map((m) => (
