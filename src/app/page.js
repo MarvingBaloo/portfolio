@@ -13,6 +13,13 @@ import SautPanneau from "@/components/SautPanneau";
 
 const HAUTEUR_PANNEAU = "h-[calc(100svh-4.75rem)]";
 
+// Le héros vise un écran plein sans jamais s'y limiter. Sur écran court
+// (téléphone barre visible, fenêtre desktop réduite) son contenu dépasse un
+// écran : à hauteur fixe, `justify-center` répartit le débordement des deux
+// côtés et `overflow-hidden` tranche les têtes de la scène. Le plancher doit
+// dépendre de la hauteur disponible, jamais d'un palier de largeur comme `sm:`.
+const HAUTEUR_HERO = "min-h-[calc(100svh-4.75rem)]";
+
 export default function Home() {
   const cartesProjets = projets.map((projet, i) => {
     const dispo = visuelsDisponibles(projet.visuels);
@@ -113,7 +120,7 @@ export default function Home() {
       {/* Panneau 1 — l'accueil occupe l'écran entier, seul. */}
       <section
         id="hero"
-        className={`relative flex ${HAUTEUR_PANNEAU} flex-col items-center justify-center overflow-hidden px-6`}
+        className={`relative flex ${HAUTEUR_HERO} flex-col items-center justify-center overflow-hidden px-6`}
       >
         <div aria-hidden="true" className="lueur" />
 
@@ -121,8 +128,8 @@ export default function Home() {
           <SceneIA />
         </div>
 
-        <HeroIntro className="mx-auto mt-6 w-full max-w-4xl">
-          <Carte className="px-8 py-9 sm:px-10 sm:py-10">
+        <HeroIntro className="mx-auto mt-4 w-full max-w-4xl sm:mt-6">
+          <Carte className="px-6 py-7 sm:px-10 sm:py-10">
             <p
               data-hero
               className="font-mono text-xs uppercase tracking-[0.18em] text-accent"
@@ -133,7 +140,7 @@ export default function Home() {
             </p>
             <h1
               data-hero
-              className="display mt-5 max-w-3xl text-2xl text-ink sm:text-3xl"
+              className="display mt-4 max-w-3xl text-2xl text-ink sm:mt-5 sm:text-3xl"
             >
               {profil.position}
             </h1>
@@ -146,7 +153,7 @@ export default function Home() {
 
             <div
               data-hero
-              className="mt-7 flex flex-wrap gap-x-4 gap-y-3 text-sm"
+              className="mt-5 flex flex-wrap gap-x-4 gap-y-3 text-sm sm:mt-7"
             >
               <a
                 href="#realisations"
@@ -164,7 +171,7 @@ export default function Home() {
           </Carte>
         </HeroIntro>
 
-        <div className="mt-6 shrink-0">
+        <div className="mt-4 shrink-0 sm:mt-6">
           <SautPanneau cible="#cartes" libelle="Réalisations" />
         </div>
       </section>
