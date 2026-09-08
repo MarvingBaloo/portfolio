@@ -6,7 +6,7 @@ sur Vercel au push sur `main`.
 Lire `ARCHITECTURE.md` avant toute intervention sur le défilement, le rouleau ou
 une animation. Ce fichier-ci donne le contexte et les règles de travail.
 
-Dernière mise à jour : 2026-08-14.
+Dernière mise à jour : 2026-08-19.
 
 ---
 
@@ -33,10 +33,11 @@ npm run lint
 ```
 src/app/
   layout.js              ScrollLisse · FondCircuits · MarqueurDefilement · Header · Footer
-  page.js                accueil — deux panneaux plein écran (#hero, #cartes)
+  page.js                accueil — deux panneaux (#hero en min-h, #cartes en h)
   projets/[slug]/page.js fiche projet, SSG
+  approche/page.js
   skills/page.js
-  globals.css            variables de thème, classes de scène, rouleau, header
+  globals.css            variables du thème sombre, classes de scène, rouleau, header
 
 src/components/
   Rouleau.js             carrousel cylindrique — le fichier le plus dense
@@ -46,7 +47,7 @@ src/components/
   SautPanneau.js         enchaînement panneau 1 → panneau 2
   MarqueurDefilement.js  pose data-defile sur <html> pour le header
   Carte, Fenetre, Galerie, ProjectCard, Compteur, Reveal, HeroIntro
-  Header, Footer, MenuMobile
+  FlecheCarte, Header, Footer, MenuMobile
   TerminalHero.js        ⚠ orphelin, importé nulle part
 
 src/data/                profil.js · projets.js · competences.js
@@ -65,8 +66,11 @@ S'y conformer, y compris dans du code neuf.
 les pièges, pas le fonctionnement. Un commentaire qui paraphrase la ligne
 suivante est à supprimer.
 
-**Dessiner en `currentColor` et `var(--…)`.** Jamais de couleur littérale : il
-n'y a pas de bascule de thème, les deux modes suivent les variables.
+**Dessiner en `currentColor` et `var(--…)`.** Jamais de couleur littérale. Le
+site n'a **qu'un seul thème, le sombre** (`color-scheme: dark`, aucun
+`prefers-color-scheme`) — c'est un parti pris éditorial, pas un défaut. Passer
+par les variables reste la règle : c'est ce qui permettrait de rouvrir la
+décision sans réécrire les composants.
 
 **Le contenu est visible par défaut, l'animation est un supplément.** État
 initial posé en JS seulement. Sans JavaScript, la page reste lisible.
@@ -102,6 +106,28 @@ l'isole et annule le blend de ses enfants : poser l'opacité par élément.
 **Un « ça ne marche pas » qui ne reproduit pas partout : vérifier d'abord que
 le serveur dev sert le code écrit.** Un `next dev` périmé a déjà fait passer un
 bug pour une incompatibilité Safari, et coûté quatre allers-retours.
+
+**Un panneau `h-` + `justify-center` + `overflow-hidden` rogne des deux côtés,
+en silence.** Le débordement part moitié en haut, moitié en bas, sans barre de
+défilement ni erreur. C'est ce qui coupait les têtes de `SceneIA` sur tout écran
+de moins de ~700 px de haut. `#hero` est donc en `min-h-`, `#cartes` reste en
+`h-` (le `Rouleau` en `flex-1` a besoin d'une hauteur déterminée). Ne pas
+uniformiser les deux.
+
+**Tester en hauteur, pas en largeur.** Rétrécir une fenêtre de Mac latéralement
+ne reproduit aucun bug de ce type. `100svh` vaut ~660 px sur un iPhone 12, pas
+844. Émuler **390 × 660**. Et les paliers Tailwind (`sm:`, `md:`) sont des
+seuils de **largeur** : ils ne corrigent jamais une contrainte de hauteur.
+
+**Décrire un projet suppose d'avoir lu tout son code.** Les fiches de
+`src/data/projets.js` engagent la réputation de Marving, qui a écrit chacun de
+ces projets de A à Z. Une fiche rédigée sur une lecture partielle sous-décrit le
+travail et se fait corriger. Procéder **un projet à la fois**, lecture
+exhaustive d'abord, et ne pas passer au suivant sans validation explicite.
+
+**Ne pas inventer le « problème » d'un projet.** L'origine d'une mission est un
+fait à recueillir auprès de Marving, jamais à reconstituer pour remplir un
+gabarit narratif. « Le client voulait X » est une réponse complète.
 
 ---
 

@@ -4,7 +4,7 @@ Site vitrine statique. Next.js 16 (App Router), JavaScript sans TypeScript,
 Tailwind 4, GSAP + Lenis. Aucune base de données, aucun CMS, aucune
 bibliothèque de composants.
 
-Dernière mise à jour : 2026-08-14.
+Dernière mise à jour : 2026-08-19.
 
 ---
 
@@ -36,15 +36,29 @@ Le second point évite de recopier les dimensions à la main dans les données, 
 elles divergeraient à la première capture remplacée. Les captures peuvent donc
 être déposées une par une sans jamais casser le rendu ni le build.
 
-### Thème : variables CSS et préférence système, sans bascule
-`globals.css` définit un jeu de variables sur `:root`, redéfini sous
-`@media (prefers-color-scheme: dark)`, puis exposé à Tailwind via
-`@theme inline`. **Il n'y a pas de bouton de thème** — donc pas d'état à
-persister, pas de `data-theme`, pas de flash au chargement.
+### Thème : le sombre est le seul thème, et c'est un parti pris éditorial
+`globals.css` définit un jeu unique de variables sur `:root`, avec
+`color-scheme: dark`, exposé à Tailwind via `@theme inline`. Il n'y a **ni
+bouton de thème, ni `prefers-color-scheme`, ni `data-theme`** — donc pas d'état
+à persister et pas de flash au chargement.
 
-Corollaire à respecter dans tout nouveau composant : dessiner en
-`currentColor` et en `var(--…)`, jamais en couleur littérale. Les deux thèmes
-suivent alors sans code supplémentaire.
+Le site s'affiche en sombre quelle que soit la configuration du visiteur. C'est
+assumé : le rendu schématique (traits clairs, accent ambré, monospace) est conçu
+pour ce fond, et un mode clair en dégraderait la lecture. Cette décision a
+remplacé le bi-thème initial le 2026-08-18.
+
+Corollaire à respecter dans tout nouveau composant : dessiner en `currentColor`
+et en `var(--…)`, jamais en couleur littérale. C'est ce qui permettra de rouvrir
+la décision sans réécrire les composants.
+
+### Toute carte du rouleau mène à une page
+Une carte qui n'ouvre rien est une promesse non tenue : le visiteur clique et
+rien ne se passe. La question « si approche technique n'a pas de page, pourquoi
+la mettre parmi les cartes ? » a tranché le 2026-08-18 — `/approche` a été créée
+plutôt que la carte retirée, et chaque carte porte désormais sa flèche.
+
+Règle à tenir : **avant d'ajouter une carte, créer sa destination.** Cela vaut
+aussi bien pour les projets que pour les rubriques transverses.
 
 ---
 
@@ -71,15 +85,30 @@ viewport » passe dessous.
 **Ne jamais appeler `lenis.scrollTo` ni `scrollIntoView` directement** depuis un
 composant : tout passe par cette fonction.
 
-### Page d'accueil : deux panneaux plein écran
-`src/app/page.js` n'est pas une page qui défile, c'est **deux panneaux** de
-`calc(100svh - 4.75rem)` :
+### Page d'accueil : deux panneaux plein écran, dont un seul à hauteur fixe
+`src/app/page.js` n'est pas une page qui défile, c'est **deux panneaux** calés
+sur `calc(100svh - 4.75rem)` :
 
-1. `#hero` — la scène + le bloc de texte, seuls ;
-2. `#cartes` — le `Rouleau`, qui contient projets, approche et skills.
+1. `#hero` — la scène + le bloc de texte, en **`min-h-`** ;
+2. `#cartes` — le `Rouleau`, en **`h-`** (hauteur fixe).
+
+**La distinction est délibérée et ne doit pas être uniformisée.** Le `Rouleau`
+mesure sa géométrie à partir d'un conteneur en `flex-1` : il lui faut une hauteur
+déterminée. Le héros, lui, a un contenu dont la hauteur dépend du texte ; à
+hauteur fixe, `justify-center` répartissait le débordement en haut **et** en bas
+et `overflow-hidden` le tranchait sans produire de défilement — les têtes des
+personnages étaient coupées sur tout écran de moins de ~700 px de haut, soit tout
+téléphone barre du navigateur visible. Corrigé le 2026-08-19.
+
+Conséquence pour toute intervention sur le héros : ajouter du contenu y est
+désormais sans danger de rognage, mais fait perdre le « un panneau = un écran »
+sur petit écran. Vérifier à **390 × 660** (iPhone 12 réel, `100svh` ≈ 660 px et
+non 844) avant de conclure.
 
 `SautPanneau` capture la molette tant que l'accueil occupe l'écran, pour
-basculer d'un panneau entier à l'autre au lieu de s'arrêter entre les deux.
+basculer d'un panneau entier à l'autre au lieu de s'arrêter entre les deux. Il
+n'écoute que l'événement `wheel` : au tactile il est inopérant, et seul le clic
+sur le bouton agit.
 
 ### `Rouleau` — carrousel cylindrique
 Les cartes sont posées sur la surface d'un cylindre (`ANGLE`, `RAYON`), pas
